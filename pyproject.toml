@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flawless"
+version = "0.1.0"
+description = "Local voice dictation for Linux (Wispr Flow style) — English, German, Serbian"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "faster-whisper>=1.0",
+    "sounddevice>=0.4",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+flawless = "flawless.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["flawless*"]

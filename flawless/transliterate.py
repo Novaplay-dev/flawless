@@ -1,0 +1,32 @@
+"""Serbian Cyrillic -> Latin transliteration (gaj's latinica)."""
+
+_MAP = {
+    "А": "A", "Б": "B", "В": "V", "Г": "G", "Д": "D", "Ђ": "Đ", "Е": "E",
+    "Ж": "Ž", "З": "Z", "И": "I", "Ј": "J", "К": "K", "Л": "L", "Љ": "Lj",
+    "М": "M", "Н": "N", "Њ": "Nj", "О": "O", "П": "P", "Р": "R", "С": "S",
+    "Т": "T", "Ћ": "Ć", "У": "U", "Ф": "F", "Х": "H", "Ц": "C", "Ч": "Č",
+    "Џ": "Dž", "Ш": "Š",
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "ђ": "đ", "е": "e",
+    "ж": "ž", "з": "z", "и": "i", "ј": "j", "к": "k", "л": "l", "љ": "lj",
+    "м": "m", "н": "n", "њ": "nj", "о": "o", "п": "p", "р": "r", "с": "s",
+    "т": "t", "ћ": "ć", "у": "u", "ф": "f", "х": "h", "ц": "c", "ч": "č",
+    "џ": "dž", "ш": "š",
+}
+
+
+def cyrillic_to_latin(text: str) -> str:
+    result = []
+    chars = list(text)
+    for i, ch in enumerate(chars):
+        latin = _MAP.get(ch)
+        if latin is None:
+            result.append(ch)
+            continue
+        # Uppercase digraphs: "Љ" -> "LJ" when the next letter is also uppercase
+        # (e.g. all-caps words), otherwise "Lj".
+        if len(latin) == 2 and ch.isupper():
+            nxt = chars[i + 1] if i + 1 < len(chars) else ""
+            if nxt.isupper():
+                latin = latin.upper()
+        result.append(latin)
+    return "".join(result)
