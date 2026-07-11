@@ -12,6 +12,7 @@ speak, press again — your words appear in whatever app has focus.
 ## Install
 
 ```bash
+git clone https://github.com/Novaplay-dev/flawless.git ~/flawless
 cd ~/flawless
 python3 -m venv .venv
 .venv/bin/pip install -e .
