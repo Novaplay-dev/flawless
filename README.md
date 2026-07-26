@@ -51,12 +51,20 @@ notification — just press `Ctrl+V`.
 # 3. hotkey -> speak -> hotkey. Done.
 ```
 
-Autostart with systemd:
+Autostart at every login (installs + enables a systemd user service):
 
 ```bash
-cp systemd/flawless.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now flawless
+.venv/bin/flawless autostart          # --disable to undo
+```
+
+## Keyboard layout
+
+`ydotool` sends raw key positions, so on a **qwertz** keyboard a plain "y"
+would arrive as "z". Flawless reads your layout from `localectl` and
+compensates. Pin it if auto-detection is wrong:
+
+```bash
+flawless config --set keyboard_layout=de    # auto | us | de
 ```
 
 ## Commands

@@ -36,6 +36,8 @@ class Config:
     #   type      -> only type, error if no tool
     #   clipboard -> always copy + notify
     output: str = "auto"
+    # Keyboard layout ydotool has to type against: auto (ask localectl) | us | de
+    keyboard_layout: str = "auto"
     # Microphone device index or name ("" = system default)
     input_device: str = ""
     # Desktop notifications on record start/stop/result

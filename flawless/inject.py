@@ -18,6 +18,56 @@ class InjectError(RuntimeError):
     pass
 
 
+# ydotool injects raw evdev keycodes picked from a built-in US table; the
+# compositor then applies the *real* layout, so on a German qwertz keyboard
+# "y" arrives as "z". Fix: hand ydotool the US character that sits on the same
+# physical key as the character we actually want.
+# (wtype/xdotool ship their own keymap and need no translation.)
+_PHYSICAL_KEYS = {
+    "de": {
+        "y": "z", "z": "y", "Y": "Z", "Z": "Y",
+        "ß": "-", "?": "_", "ü": "[", "Ü": "{", "ö": ";", "Ö": ":",
+        "ä": "'", "Ä": '"', "+": "]", "*": "}", "#": "\\", "'": "|",
+        "-": "/", "_": "?", ";": "<", ":": ">", '"': "@", "§": "#",
+        "&": "^", "/": "&", "(": "*", ")": "(", "=": ")", "^": "`", "°": "~",
+    }
+}
+# ponytail: AltGr-only chars (@ € [ ] { } \ | < >) have no US single-key
+# equivalent and stay wrong on de; add a keycode+modifier sender if they matter.
+
+
+def _detect_layout() -> str:
+    """Layout configured for this machine, e.g. 'de'. Empty when unknown."""
+    # ponytail: system-wide layout only; a per-window KDE/GNOME switcher isn't
+    # followed. Set keyboard_layout in config.toml to pin it.
+    try:
+        out = subprocess.run(
+            ["localectl", "status"], capture_output=True, text=True, timeout=5
+        ).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    for line in out.splitlines():
+        if "Layout:" in line:
+            return line.split(":", 1)[1].strip().split(",")[0]
+    return ""
+
+
+def keyboard_layout() -> str:
+    from .config import load
+
+    try:
+        layout = load().keyboard_layout
+    except Exception:
+        layout = "auto"
+    return _detect_layout() if layout == "auto" else layout
+
+
+def for_layout(text: str, layout: str | None = None) -> str:
+    """Translate text into the US characters ydotool must send on `layout`."""
+    keys = _PHYSICAL_KEYS.get(keyboard_layout() if layout is None else layout)
+    return text.translate(str.maketrans(keys)) if keys else text
+
+
 def _run(cmd: list[str], input_text: str | None = None) -> bool:
     env = os.environ.copy()
     # Fedora runs ydotoold as a system service; its socket lives in /tmp.
@@ -55,7 +105,7 @@ def available_typers() -> list[str]:
 def type_text(text: str) -> bool:
     """Try to type text directly into the focused window."""
     for tool in available_typers():
-        if tool == "ydotool" and _run(["ydotool", "type", "--", text]):
+        if tool == "ydotool" and _run(["ydotool", "type", "--", for_layout(text)]):
             return True
         if tool == "wtype" and _run(["wtype", "--", text]):
             return True

@@ -85,8 +85,8 @@ def _cmd_setup(args) -> int:
         f"""
 Flawless {__version__} — setup
 
-1. Start the daemon (or install the systemd service, see README):
-     flawless daemon &
+1. Start the daemon:
+     flawless daemon &        (or: flawless autostart, to run it at every login)
 
 2. Bind a global hotkey to toggle dictation.
    KDE:   System Settings -> Keyboard -> Shortcuts -> Add New -> Command:
@@ -113,6 +113,39 @@ Direct typing:    install ydotool + enable ydotoold (else clipboard is used)
         print(f"typing tool detected: {', '.join(typers)} — text will be typed directly")
     else:
         print("no typing tool detected — falling back to clipboard + Ctrl+V")
+    return 0
+
+
+UNIT = """[Unit]
+Description=Flawless voice dictation daemon
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart={exe} daemon
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target
+"""
+
+
+def _cmd_autostart(args) -> int:
+    import subprocess
+    from pathlib import Path
+
+    unit = Path.home() / ".config/systemd/user/flawless.service"
+    if args.disable:
+        subprocess.run(["systemctl", "--user", "disable", "--now", "flawless"])
+        print("autostart disabled")
+        return 0
+    unit.parent.mkdir(parents=True, exist_ok=True)
+    unit.write_text(UNIT.format(exe=Path(sys.argv[0]).resolve()))
+    subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
+    subprocess.run(["systemctl", "--user", "enable", "--now", "flawless"], check=True)
+    print(f"autostart enabled ({unit})")
     return 0
 
 
@@ -161,6 +194,10 @@ def main(argv: list[str] | None = None) -> int:
 
     p = sub.add_parser("setup", help="first-run setup instructions")
     p.set_defaults(func=_cmd_setup)
+
+    p = sub.add_parser("autostart", help="start the daemon at login (systemd user service)")
+    p.add_argument("--disable", action="store_true", help="turn autostart off again")
+    p.set_defaults(func=_cmd_autostart)
 
     args = parser.parse_args(argv)
     return args.func(args)
